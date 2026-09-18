@@ -136,12 +136,14 @@
         "deb"
       ],
       "category": "Utility",
+      "maintainer": "Margele1337 <xu17183167799@gmail.com>",
       "artifactName": "MoeKoe-NextGen_v${version}-${arch}.${ext}"
     }
   },
   "type": "module",
   "author": {
-    "name": "Margele1337"
+    "name": "Margele1337",
+    "email": "xu17183167799@gmail.com"
   },
   "blog": "https://github.com/Margele1337/MoeKoe-NextGen",
   "license": "GPL-2.0-only",
