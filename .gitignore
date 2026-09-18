@@ -30,6 +30,7 @@ api/.serena/*
 *.sln
 *.sw?
 dev-dist/*
+.vite
 pnpm-lock.yaml
 pnpm-workspace.yaml
 
