@@ -1,6 +1,6 @@
 > [!IMPORTANT]
 > **本仓库是第三方魔改版（Fork），并非官方版本。**
-> - 上游项目：[iAJue/MoeKoeMusic](https://github.com/iAJue/MoeKoeMusic)（作者 MoeJue，GPL-2.0-only），本仓库由 [xuxin1337](https://github.com/xuxin1337) 维护。
+> - 上游项目：[iAJue/MoeKoeMusic](https://github.com/iAJue/MoeKoeMusic)（作者 MoeJue，GPL-2.0-only），本仓库由 [Margele1337](https://github.com/Margele1337) 维护。
 > - 本仓库与原作者、酷狗音乐官方均无任何关联；应用名、包名、深链协议（`moekoe-nextgen://`）均已与原版区分。
 > - 主要改动：重写桌面频谱模块、新增「频谱幅度」设置、移除桌面歌词 HUD/行数/锁定、频谱窗口在其它应用全屏时贴屏幕底部、应用更名与自动更新指向本仓库。
 > - 原项目的免责声明与 GPL-2.0 开源协议继续适用，详见文末。

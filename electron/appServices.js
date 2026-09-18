@@ -482,7 +482,7 @@ export function createTray(mainWindow, title = '') {
             label: t('project-home'),
             icon: getIconPath('home.png', 'menu'),
             click: () => {
-                shell.openExternal('https://github.com/xuxin1337/MoeKoe-NextGen');
+                shell.openExternal('https://github.com/Margele1337/MoeKoe-NextGen');
             }
         },
         {

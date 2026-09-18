@@ -19,7 +19,7 @@ If you discover a security vulnerability in this project, please follow these st
    Please report it **privately** to allow time for remediation before public disclosure.
 
 2. **Contact:**
-   - 🔒 GitHub 私密安全报告: [Security Advisories](https://github.com/xuxin1337/MoeKoe-NextGen/security/advisories/new)
+   - 🔒 GitHub 私密安全报告: [Security Advisories](https://github.com/Margele1337/MoeKoe-NextGen/security/advisories/new)
    - 🕒 Expected Response Time: 1–3 business days
 
 3. **Information to include in your report:**

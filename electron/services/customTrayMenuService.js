@@ -314,7 +314,7 @@ class CustomTrayMenuService {
 
         switch (action) {
             case 'project-home':
-                shell.openExternal('https://github.com/xuxin1337/MoeKoe-NextGen');
+                shell.openExternal('https://github.com/Margele1337/MoeKoe-NextGen');
                 break;
             case 'prev-track':
                 mainWindow?.webContents.send('play-previous-track');

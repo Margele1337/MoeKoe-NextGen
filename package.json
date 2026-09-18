@@ -1,7 +1,7 @@
 {
   "name": "moekoe-nextgen",
   "version": "1.6.9",
-  "homepage": "https://github.com/xuxin1337/MoeKoe-NextGen",
+  "homepage": "https://github.com/Margele1337/MoeKoe-NextGen",
   "main": "electron/main.js",
   "scripts": {
     "install-all": "npm install && cd api && npm install",
@@ -31,7 +31,7 @@
   "build": {
     "publish": {
       "provider": "github",
-      "owner": "xuxin1337",
+      "owner": "Margele1337",
       "repo": "MoeKoe-NextGen"
     },
     "compression": "normal",
@@ -59,7 +59,7 @@
     ],
     "appId": "cn.moekoe.nextgen",
     "productName": "MoeKoe-NextGen",
-    "copyright": "Based on MoeKoe Music (© MoeJue), modified by xuxin1337",
+    "copyright": "Based on MoeKoe Music (© MoeJue), modified by Margele1337",
     "directories": {
       "output": "dist_electron"
     },
@@ -141,9 +141,9 @@
   },
   "type": "module",
   "author": {
-    "name": "xuxin1337"
+    "name": "Margele1337"
   },
-  "blog": "https://github.com/xuxin1337/MoeKoe-NextGen",
+  "blog": "https://github.com/Margele1337/MoeKoe-NextGen",
   "license": "GPL-2.0-only",
   "description": "MoeKoe-NextGen（基于 MoeKoe Music 的魔改版）",
   "devDependencies": {
