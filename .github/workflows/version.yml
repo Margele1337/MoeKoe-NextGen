@@ -1,0 +1,51 @@
+name: Version Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # 计算版本号
+  check-version:
+    if: github.event_name == 'workflow_dispatch'
+    name: Check Next Version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest tag
+        run: |
+          echo "Latest tag: $(git tag --sort=-v:refname | head -n 1)"
+          
+      - name: Calculate next version
+        id: set-version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.2.0")
+          MAJOR=$(echo $VERSION | awk -F. '{print $1}' | sed 's/v//')
+          MINOR=$(echo $VERSION | awk -F. '{print $2}')
+          PATCH=$(echo $VERSION | awk -F. '{print $3}')
+          PATCH=$((PATCH + 1))
+          if [ "$PATCH" -gt 9 ]; then
+            PATCH=0
+            MINOR=$((MINOR + 1))
+          fi
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Get previous tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0)
+          echo "Previous version: $PREV_TAG"
+          
+      - name: Display version information
+        run: |
+          echo "Current version: $(git describe --tags --abbrev=0)"
+          echo "Next version will be: ${{ steps.set-version.outputs.NEW_VERSION }}"
+          echo "Changes since last tag:"
+          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"* %s"
+        

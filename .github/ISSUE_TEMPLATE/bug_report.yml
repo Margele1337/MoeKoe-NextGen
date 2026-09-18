@@ -1,0 +1,65 @@
+name: "🐞 Bug报告"
+description: 创建一个报告来帮助我们改进产品
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **在开始之前...**
+
+        此表单仅用于提交Bug报告。如果您有使用问题或不确定这是否真的是一个Bug，请确保：
+
+        - 阅读[文档](https://music.moekoe.cn/)
+        - 搜索是否有类似的问题 - 它可能已经被回答或修复
+        - 提供有效的 Bug 描述和明确的问题内容，否则 issue 将可能被直接关闭或忽略处理
+
+        如果您发现一个旧的、已关闭的问题在最新版本中仍然存在，请使用下面的表单打开一个新问题。
+  - type: input
+    id: version
+    attributes:
+      label: 产品版本
+      placeholder: 例如：@ MoeKoe Music V1.4.3 - darwin
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: 复现步骤
+      description: |
+        我们需要做什么才能复现这个bug？请提供清晰简洁的复现说明，这对我们及时分类您的问题很重要。
+      placeholder: |
+        1. 打开...
+        2. 点击...
+        3. 滚动到...
+        4. 查看错误
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 您期望看到什么？
+    validations:
+      required: true
+  - type: textarea
+    id: actually-happening
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么？
+    validations:
+      required: true
+  - type: textarea
+    id: system-info
+    attributes:
+      label: 系统信息
+      description: 操作系统、网络环境、设备等
+      placeholder: |
+        - 操作系统: [例如 Windows 10, macOS 12.0, Linux]
+        - 网络环境: [例如 中国, 日本, 移动, WiFi]
+        - 设备信息: [例如 笔记本, GTX1060, 16G, 台式机]
+  - type: textarea
+    id: additional-comments
+    attributes:
+      label: 其他补充说明
+      description: 例如：一些关于您如何遇到这个bug的背景/上下文。

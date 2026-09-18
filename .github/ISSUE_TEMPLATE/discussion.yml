@@ -1,0 +1,79 @@
+name: "💬 讨论问题"
+description: 提出一个需要讨论的话题或问题
+title: '[讨论]: '
+labels: ['question']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **欢迎参与讨论！**
+        
+        这个模板适用于那些不属于Bug报告或新特性请求的讨论话题。
+        例如：设计决策、架构问题、最佳实践问题等。
+        
+        在开始之前，请确保：
+        
+        - 您已经搜索过现有的讨论，避免重复
+        - 您的问题足够清晰，以便其他人能够理解和参与讨论
+        
+        或前往 [社区](https://github.com/iAJue/MoeKoeMusic/discussions) 进行讨论
+  - type: textarea
+    id: topic
+    attributes:
+      label: 讨论主题
+      description: 请简明扼要地描述您想讨论的主题
+      placeholder: 我想讨论关于...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景和上下文
+      description: 请提供一些背景信息，帮助其他人理解为什么这个话题值得讨论
+      placeholder: |
+        这个话题在以下情况下很重要...
+        我遇到了以下挑战...
+    validations:
+      required: true
+  - type: textarea
+    id: questions
+    attributes:
+      label: 关键问题
+      description: 您希望通过此讨论解答哪些问题？
+      placeholder: |
+        1. 我们应该如何处理...？
+        2. 什么是...的最佳实践？
+        3. 社区对...有什么看法？
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-ideas
+    attributes:
+      label: 您的想法
+      description: 您对这个话题有什么想法或建议？分享您的初步思考
+      placeholder: 我认为我们可以...
+    validations:
+      required: false
+  - type: dropdown
+    id: topic-area
+    attributes:
+      label: 话题领域
+      description: 这个讨论主要涉及哪个领域？
+      options:
+        - 架构设计
+        - 用户体验
+        - 性能优化
+        - 开发流程
+        - 文档改进
+        - 社区建设
+        - 其他
+    validations:
+      required: false
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: 补充信息
+      description: 还有什么其他信息可以帮助丰富这次讨论？
+      placeholder: 相关资源、链接、截图等...
+    validations:
+      required: false 

@@ -1,0 +1,68 @@
+name: Auto Close Invalid Issues
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # 每天 UTC 03:00 运行一次
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  close-invalid:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close invalid issues
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "invalid",
+              per_page: 100
+            })
+
+            const now = new Date()
+            for (const issue of issues) {
+              const updatedAt = new Date(issue.updated_at)
+              const hoursSinceUpdate = (now - updatedAt) / (1000 * 60 * 60)
+
+              if (hoursSinceUpdate > 24) {
+                console.log(`Closing issue #${issue.number}`)
+
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number
+                })
+
+                const botComment = comments.find(c => c.user.type === "Bot")
+
+                const message = "⏳ 由于此 Issue 已标记为 **invalid** 并且超过 24 小时未更新，现自动关闭。"
+
+                if (botComment) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                    body: message
+                  })
+                } else {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: message
+                  })
+                }
+
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: "closed"
+                })
+              }
+            }

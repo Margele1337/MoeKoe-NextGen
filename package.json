@@ -1,0 +1,180 @@
+{
+  "name": "moekoe-nextgen",
+  "version": "1.6.9",
+  "homepage": "https://github.com/xuxin1337/MoeKoe-NextGen",
+  "main": "electron/main.js",
+  "scripts": {
+    "install-all": "npm install && cd api && npm install",
+    "serve": "vite",
+    "build": "vite build",
+    "build:docker": "cross-env VITE_APP_API_URL=/api vite build",
+    "preview": "vite preview",
+    "electron:serve": "cross-env NODE_ENV=development node electron/start-electron.cjs",
+    "api": "node api/app.js --platform=lite --port=6521",
+    "dev": "npm run api & npm run serve & npm run electron:serve",
+    "build:api:win": "npm run --prefix ./api pkgwin",
+    "build:api:linux": "npm run --prefix ./api pkglinux",
+    "build:api:linux-arm64": "npm run --prefix ./api pkglinux-arm64",
+    "build:api:macos": "npm run --prefix ./api pkgmacos",
+    "electron:build:win": "run-s build:api:win \"electron:build -- --win --publish never\"",
+    "electron:build:linux": "run-s build:api:linux \"electron:build -- --linux --publish never\"",
+    "electron:build:linux-arm64": "run-s build:api:linux-arm64 \"electron:build -- --linux --publish never\"",
+    "electron:build:macos": "run-s build:api:macos \"electron:build -- --mac --x64 --arm64 --publish never\"",
+    "electron:build:macos:universal": "run-s build:api:macos \"electron:build -- --mac --universal --publish never\"",
+    "electron:build:macos:x64": "run-s build:api:macos \"electron:build -- --mac --x64 --publish never\"",
+    "electron:build:macos:arm64": "run-s build:api:macos \"electron:build -- --mac --arm64 --publish never\"",
+    "electron:build": "cross-env NODE_ENV=production electron-builder"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "build": {
+    "publish": {
+      "provider": "github",
+      "owner": "xuxin1337",
+      "repo": "MoeKoe-NextGen"
+    },
+    "compression": "normal",
+    "extraResources": [
+      {
+        "from": "build/icons/",
+        "to": "icons/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "extraFiles": [
+      {
+        "from": "api/bin",
+        "to": "api/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "public/assets",
+        "to": "assets"
+      }
+    ],
+    "appId": "cn.moekoe.nextgen",
+    "productName": "MoeKoe-NextGen",
+    "copyright": "Based on MoeKoe Music (© MoeJue), modified by xuxin1337",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "icon": "build/icons/icon",
+    "protocols": [
+      {
+        "name": "MoeKoe-NextGen Protocol",
+        "schemes": [
+          "moekoe-nextgen"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icons/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "artifactName": "MoeKoe-NextGen_Setup_v${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "installerIcon": "build/icons/icon.ico",
+      "uninstallerIcon": "build/icons/icon.ico",
+      "installerHeaderIcon": "build/icons/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MoeKoe-NextGen",
+      "include": "build/installer.nsh",
+      "license": "build/license.txt",
+      "language": "2052",
+      "warningsAsErrors": true
+    },
+    "mac": {
+      "x64ArchFiles": "*",
+      "icon": "build/icons/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null,
+      "artifactName": "MoeKoe-NextGen_v${version}-${arch}.${ext}",
+      "protocols": [
+        {
+          "name": "MoeKoe-NextGen Protocol",
+          "schemes": [
+            "moekoe-nextgen"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "sign": false
+    },
+    "linux": {
+      "icon": "build/icons/linux",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "artifactName": "MoeKoe-NextGen_v${version}-${arch}.${ext}"
+    }
+  },
+  "type": "module",
+  "author": {
+    "name": "xuxin1337"
+  },
+  "blog": "https://github.com/xuxin1337/MoeKoe-NextGen",
+  "license": "GPL-2.0-only",
+  "description": "MoeKoe-NextGen（基于 MoeKoe Music 的魔改版）",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/compiler-sfc": "^3.5.12",
+    "cross-env": "^7.0.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "esbuild": "0.25.11",
+    "npm-run-all": "^4.1.5",
+    "sass-embedded": "^1.99.0",
+    "vite": "^7.2.6",
+    "vite-plugin-pwa": "^1.2.0",
+    "vue-loader": "^17.3.1",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "electron-is-dev": "^3.0.1",
+    "electron-log": "^5.2.0",
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.6.2",
+    "music-metadata": "^11.7.3",
+    "pinia": "^3.0.0",
+    "pinia-plugin-persistedstate": "^4.1.1",
+    "tree-kill": "^1.2.2",
+    "vue": "^3.5.12",
+    "vue-i18n": "^10.0.4",
+    "vue-router": "^4.4.5",
+    "vue3-virtual-scroller": "^0.2.3",
+    "ws": "^8.18.1"
+  }
+}

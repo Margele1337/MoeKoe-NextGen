@@ -1,0 +1,440 @@
+import { app, ipcMain, globalShortcut, dialog, Notification, shell, session, powerSaveBlocker, nativeImage, screen } from 'electron';
+import {
+    createWindow, createTray, createTouchBar, startApiServer,
+    stopApiServer, startNeteaseApiServer, stopNeteaseApiServer,
+    registerShortcut,
+    playStartupSound, createLyricsWindow, setThumbarButtons,
+    registerProtocolHandler, sendHashAfterLoad, getTray, createMvWindow,
+    createSpectrumWindow, stopSpectrumFullscreenWatcher
+} from './appServices.js';
+import { initializeExtensions, cleanupExtensions } from './extensions/extensions.js';
+import apiService from './services/apiService.js';
+import statusBarLyricsService from './services/statusBarLyricsService.js';
+import customTrayMenuService from './services/customTrayMenuService.js';
+import { setupDesktopShortcutIcon } from './services/desktopShortcutIcon.js';
+import { openLogPath, exportLog } from './services/logHelper.js';
+import Store from 'electron-store';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { t } from './language/i18n.js';
+
+let mainWindow = null;
+let blockerId = null;
+const store = new Store();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+    process.exit(0);
+} else {
+    let protocolHandler;
+    app.on('second-instance', (event, commandLine) => {
+        if (!protocolHandler) {
+            protocolHandler = registerProtocolHandler(null);
+        }
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        }
+        protocolHandler.handleProtocolArgv(commandLine);
+    });
+}
+
+app.on('ready', () => {
+    Promise.all([startApiServer(), startNeteaseApiServer()]).then(() => {
+        try {
+            mainWindow = createWindow();
+            createTray(mainWindow);
+            customTrayMenuService.init(() => mainWindow, getTray);
+
+            // 初始化状态栏歌词服务
+            statusBarLyricsService.init(mainWindow, store, getTray, createTray);
+
+            if (process.platform === "darwin" && store.get('settings')?.touchBar == 'on') createTouchBar(mainWindow);
+            playStartupSound();
+            registerShortcut();
+            apiService.init(mainWindow);
+            registerProtocolHandler(mainWindow);
+            sendHashAfterLoad(mainWindow);
+            void initializeExtensions();
+            setupDesktopShortcutIcon();
+        } catch (error) {
+            console.log('初始化应用时发生错误:', error);
+            createTray(null);
+            dialog.showMessageBox({
+                type: 'error',
+                title: t('error'),
+                message: t('init-error'),
+                buttons: [t('ok')]
+            }).then(result => {
+                if (result.response === 0) {
+                    app.isQuitting = true;
+                    app.quit();
+                }
+            });
+        }
+    }).catch((error) => {
+        console.log('API 服务启动失败:', error);
+        createTray(null);
+        dialog.showMessageBox({
+            type: 'error',
+            title: t('error'),
+            message: t('api-error'),
+            buttons: [t('ok')]
+        }).then(result => {
+            if (result.response === 0) {
+                app.isQuitting = true;
+                app.quit();
+            }
+            return;
+        });
+    });
+});
+
+const settings = store.get('settings');
+if (settings?.gpuAcceleration === 'on') {
+    app.disableHardwareAcceleration();
+    app.commandLine.appendSwitch('enable-transparent-visuals');
+    app.commandLine.appendSwitch('disable-gpu-compositing');
+}
+
+if (settings?.preventAppSuspension === 'on') {
+    blockerId = powerSaveBlocker.start('prevent-display-sleep');
+}
+
+if (settings?.highDpi === 'on') {
+    app.commandLine.appendSwitch('high-dpi-support', '1');
+    app.commandLine.appendSwitch('force-device-scale-factor', settings?.dpiScale || '1');
+}
+
+if (settings?.apiMode === 'on') {
+    apiService.start();
+}
+
+// 即将退出
+app.on('before-quit', () => {
+    if (mainWindow && !mainWindow.isMaximized()) {
+        const windowBounds = mainWindow.getBounds();
+        store.set('windowState', windowBounds);
+    }
+    if (blockerId !== null) {
+        powerSaveBlocker.stop(blockerId);
+    }
+
+    // 清理状态栏歌词服务
+    setImmediate(() => {
+        statusBarLyricsService.cleanup();
+        customTrayMenuService.cleanup();
+
+        stopApiServer();
+        stopNeteaseApiServer();
+        stopSpectrumFullscreenWatcher();
+        apiService.stop();
+        cleanupExtensions();
+        app.exit(0);
+    });
+});
+// 关闭所有窗口
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.isQuitting = true;
+        app.quit(); // 非 macOS 系统上关闭所有窗口后退出应用
+    }
+});
+// 图标被点击
+app.on('activate', () => {
+    if (mainWindow && !mainWindow.isVisible()) {
+        mainWindow.show();
+    } else if (!mainWindow) {
+        mainWindow = createWindow();
+    }
+});
+
+// 处理未捕获的异常
+process.on('uncaughtException', (error) => {
+    console.error('Unhandled Exception:', error);
+});
+
+// 监听渲染进程发送的免责声明结果
+ipcMain.on('disclaimer-response', (event, accepted) => {
+    if (accepted) {
+        store.set('disclaimerAccepted', true);
+    } else {
+        app.isQuitting = true;
+        app.quit();
+    }
+});
+
+ipcMain.on('window-control', (event, action) => {
+    switch (action) {
+        case 'close':
+            if (store.get('settings')?.minimizeToTray === 'off') {
+                app.isQuitting = true;
+                app.quit();
+            } else {
+                mainWindow.close();
+            }
+            break;
+        case 'minimize':
+            mainWindow.minimize();
+            break;
+        case 'maximize':
+            if (mainWindow.isMaximized()) {
+                mainWindow.unmaximize();
+                store.set('maximize', false);
+            } else {
+                mainWindow.maximize();
+                store.set('maximize', true);
+            }
+            break;
+    }
+});
+
+app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+});
+ipcMain.on('save-settings', (event, settings) => {
+    store.set('settings', settings);
+    if (['on', 'off'].includes(settings?.autoStart)) {
+        app.setLoginItemSettings({
+            openAtLogin: settings?.autoStart === 'on',
+            path: app.getPath('exe'),
+        });
+    }
+});
+ipcMain.on('clear-settings', (event) => {
+    store.clear();
+    session.defaultSession.clearCache();
+    session.defaultSession.clearStorageData();
+    const userDataPath = app.getPath('userData');
+    shell.openPath(userDataPath);
+});
+ipcMain.on('custom-shortcut', (event) => {
+    registerShortcut();
+});
+
+ipcMain.on('lyrics-data', (event, lyricsData) => {
+    const lyricsWindow = mainWindow?.lyricsWindow;
+    if (lyricsWindow) {
+        lyricsWindow.webContents.send('lyrics-data', lyricsData);
+    }
+
+    // 状态栏歌词功能服务处理（仅支持Mac系统）
+    if (process.platform === 'darwin') {
+        statusBarLyricsService.handleLyricsData(lyricsData);
+    }
+});
+
+// 转发频谱可视化数据到桌面频谱窗口
+ipcMain.on('spectrum-data', (event, data) => {
+    const spectrumWindow = mainWindow?.spectrumWindow;
+    if (spectrumWindow) {
+        spectrumWindow.webContents.send('spectrum-data', data);
+    }
+});
+
+// 频谱窗口就绪，请求主窗口重发当前频谱/封面信息
+ipcMain.on('spectrum-hud-ready', () => {
+    if (mainWindow && mainWindow.spectrumWindow) {
+        mainWindow.webContents.send('request-current-spectrum');
+    }
+});
+
+// 转发设置变更到频谱窗口（实时生效，无需重启）
+ipcMain.on('spectrum-setting-update', (_event, { key, value }) => {
+    const spectrumWindow = mainWindow?.spectrumWindow;
+    if (spectrumWindow) {
+        spectrumWindow.webContents.send('spectrum-setting-changed', { key, value });
+    }
+});
+
+ipcMain.on('server-lyrics', (event, lyricsData) => {
+    apiService.updateLyrics(lyricsData);
+});
+
+// 监听桌面歌词操作
+ipcMain.on('desktop-lyrics-action', (event, action) => {
+    switch (action) {
+        case 'previous-song':
+            mainWindow.webContents.send('play-previous-track');
+            break;
+        case 'next-song':
+            mainWindow.webContents.send('play-next-track');
+            break;
+        case 'toggle-play':
+            mainWindow.webContents.send('toggle-play-pause');
+            break;
+        case 'close-lyrics':
+            const lyricsWindow = mainWindow.lyricsWindow;
+            if (lyricsWindow) {
+                lyricsWindow.close();
+                new Notification({
+                    title: t('desktop-lyrics-closed'),
+                    icon: path.join(__dirname, '../build/icons/logo.png')
+                }).show();
+                mainWindow.lyricsWindow = null;
+            }
+            syncDesktopLyricsSetting('off');
+            break;
+        case 'display-lyrics':
+            if (!mainWindow.lyricsWindow) createLyricsWindow();
+            syncDesktopLyricsSetting('on');
+            break;
+    }
+});
+
+const syncDesktopLyricsSetting = (value) => {
+    const settings = store.get('settings') || {};
+    store.set('settings', {
+        ...settings,
+        desktopLyrics: value
+    });
+};
+
+// 监听桌面频谱操作
+ipcMain.on('desktop-spectrum-action', (event, action) => {
+    switch (action) {
+        case 'display-spectrum':
+            if (!mainWindow.spectrumWindow) createSpectrumWindow();
+            syncDesktopSpectrumSetting('on');
+            break;
+        case 'close-spectrum':
+            const spectrumWindow = mainWindow.spectrumWindow;
+            if (spectrumWindow) {
+                spectrumWindow.close();
+                mainWindow.spectrumWindow = null;
+            }
+            syncDesktopSpectrumSetting('off');
+            break;
+    }
+});
+
+const syncDesktopSpectrumSetting = (value) => {
+    const settings = store.get('settings') || {};
+    store.set('settings', {
+        ...settings,
+        desktopSpectrum: value
+    });
+};
+
+ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+    const lyricsWindow = mainWindow.lyricsWindow;
+    if (lyricsWindow) {
+        lyricsWindow.setIgnoreMouseEvents(ignore, { forward: true });
+    }
+});
+
+ipcMain.on('set-spectrum-ignore-mouse-events', (event, ignore) => {
+    const spectrumWindow = mainWindow?.spectrumWindow;
+    if (spectrumWindow) {
+        spectrumWindow.setIgnoreMouseEvents(ignore, { forward: true });
+    }
+});
+
+ipcMain.on('window-drag', (event, { x, y, width, height }) => {
+    const lyricsWindow = mainWindow.lyricsWindow;
+    if (!lyricsWindow) return
+    const bounds = lyricsWindow.getBounds();
+    const nextBounds = {
+        x: Math.round(x ?? bounds.x),
+        y: Math.round(y ?? bounds.y),
+        width: Math.round(width ?? bounds.width),
+        height: Math.round(height ?? bounds.height)
+    };
+    lyricsWindow.setBounds(nextBounds)
+    store.set('lyricsWindowPosition', { x: nextBounds.x, y: nextBounds.y });
+    store.set('lyricsWindowSize', { width: nextBounds.width, height: nextBounds.height });
+})
+
+ipcMain.on('spectrum-window-drag', (event, { x, y, width, height }) => {
+    const spectrumWindow = mainWindow.spectrumWindow;
+    if (!spectrumWindow) return
+    const bounds = spectrumWindow.getBounds();
+    const nextBounds = {
+        x: Math.round(x ?? bounds.x),
+        y: Math.round(y ?? bounds.y),
+        width: Math.round(width ?? bounds.width),
+        height: Math.round(height ?? bounds.height)
+    };
+    spectrumWindow.setBounds(nextBounds)
+    store.set('spectrumWindowPosition', { x: nextBounds.x, y: nextBounds.y });
+    store.set('spectrumWindowSize', { width: nextBounds.width, height: nextBounds.height });
+})
+
+ipcMain.on('lyrics-window-fixed-size', (event, { width, height, fixed }) => {
+    const lyricsWindow = mainWindow.lyricsWindow;
+    if (!lyricsWindow) return
+    if (fixed) {
+        lyricsWindow.setMaximumSize(Math.round(width), Math.round(height));
+        return
+    }
+    const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+    lyricsWindow.setMaximumSize(screenWidth, screenHeight);
+})
+
+ipcMain.handle('lyrics-window-pointer-state', () => {
+    const lyricsWindow = mainWindow.lyricsWindow;
+    if (!lyricsWindow) return null
+    return {
+        cursor: screen.getCursorScreenPoint(),
+        bounds: lyricsWindow.getBounds()
+    };
+})
+
+ipcMain.on('play-pause-action', (event, playing, currentTime) => {
+    const lyricsWindow = mainWindow.lyricsWindow;
+    if (lyricsWindow) {
+        lyricsWindow.webContents.send('playing-status', playing);
+    }
+    const spectrumWindow = mainWindow.spectrumWindow;
+    if (spectrumWindow) {
+        spectrumWindow.webContents.send('playing-status', playing);
+    }
+    apiService.updatePlayerState({ isPlaying: playing, currentTime: currentTime });
+    setThumbarButtons(mainWindow, playing);
+    customTrayMenuService.updatePlaybackState(playing, currentTime);
+})
+
+ipcMain.on('open-url', (event, url) => {
+    shell.openExternal(url);
+})
+
+ipcMain.on('set-tray-title', (event, title) => {
+    createTray(mainWindow, t('now-playing') + title);
+    mainWindow.setTitle(title);
+    void customTrayMenuService.refresh();
+})
+
+
+ipcMain.handle('open-mv-window', (e, url) => {
+    return (async () => {
+        const mvWindow = createMvWindow();
+        try {
+            await mvWindow.loadURL(url);
+            mvWindow.show();
+            return true;
+        } catch (error) {
+            console.error('[open-mv-window] loadURL failed:', url, error);
+            try {
+                mvWindow.close();
+            } catch {}
+            throw error;
+        }
+    })();
+});
+
+ipcMain.handle('open-log-path', async (e) => {
+    try {
+        const result = await openLogPath();
+        return result ? { error: result } : { success: true };
+    }
+    catch (err) { return { error: err }; }
+});
+
+ipcMain.handle('export-log', async (e) => {
+    try { return await exportLog(); }
+    catch (err) { return { error: err }; }
+});
+
