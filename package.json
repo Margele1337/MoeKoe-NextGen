@@ -1,6 +1,6 @@
 {
   "name": "moekoe-nextgen",
-  "version": "1.6.9",
+  "version": "1.7.0",
   "homepage": "https://github.com/Margele1337/MoeKoe-NextGen",
   "main": "electron/main.js",
   "scripts": {
